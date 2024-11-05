@@ -67,6 +67,14 @@ You **must setup** [Confluent Cloud Flink Table API](https://docs.confluent.io/c
 
 ![Create Flink API Key : Finished](resources/confluent-cloud-setup-19.png)
 
+### 6️⃣ **Create Kafka Topic** for Cloud Environment `fraud-detection-demo` cluster
+
+![Create Kafka Topic : Cluster Selection](resources/confluent-cloud-setup-21.png)
+
+![Create Kafka Topic : Create](resources/confluent-cloud-setup-22.png)
+
+![Create Kafka Topic : Create with Defaults](resources/confluent-cloud-setup-23.png)
+
 ## Test Confluent Cloud Setup
 Once you had done the **Setup Confluent Cloud** mentioned above, you can run the following JUnit Test to test your setup is proper
 
