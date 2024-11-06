@@ -23,7 +23,7 @@ import org.junit.jupiter.api.Test;
  * @see <a href="https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html">Java Table API Quick Start on Confluent Cloud for Apache Flink</a>
  */
 @Slf4j
-public class HelloTableApiJUnitTest
+public class HelloTableApiJUnitIntegrationTest
 {
     @BeforeAll
     public static void setUpClass() {}

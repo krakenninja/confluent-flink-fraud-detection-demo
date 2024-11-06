@@ -25,6 +25,7 @@
         <!-- Project -->
         <revision>1.0.0</revision><!-- https://maven.apache.org/maven-ci-friendly.html -->
         <changelist>-SNAPSHOT</changelist><!-- https://maven.apache.org/maven-ci-friendly.html -->
+        <jacoco.coveredratio.minimum>0.00</jacoco.coveredratio.minimum><!-- 20241106 : CKW temporarily disable codecoverage -->
     </properties>
     
     <dependencies>
@@ -150,14 +151,119 @@
                                     </excludes>
                                 </filter>
                             </filters>
-                            <transformers>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer
-                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+<!--                            <transformers>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>com.github.krakenninja.demo.HelloTableApi</mainClass>
                                 </transformer>
-                            </transformers>
+                            </transformers>-->
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>run-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>generate-code-coverage-report</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>CLASS</element>
+                                    <!--
+                                        Limit counter(s) : 
+                                        ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+                                        INSTRUCTION 
+                                          - The smallest unit JaCoCo counts are 
+                                            single Java byte code instructions. 
+                                            Instruction coverage provides 
+                                            information about the amount of code 
+                                            that has been executed or missed
+                                        BRANCH
+                                          - JaCoCo calculates branch coverage 
+                                            for all if and switch statements. 
+                                            This metric counts the total number 
+                                            of such branches in a method and 
+                                            determines the number of executed or 
+                                            missed branches
+                                        LINE
+                                          - For all class files that have been 
+                                            compiled with debug information, 
+                                            coverage information for individual 
+                                            lines can be calculated. A source 
+                                            line is considered executed when at 
+                                            least one instruction that is 
+                                            assigned to this line has been 
+                                            executed
+                                        COMPLEXITY
+                                          - JaCoCo also calculates cyclomatic 
+                                            complexity for each non-abstract 
+                                            method and summarizes complexity for 
+                                            classes, packages and groups. 
+                                            Cyclomatic complexity is the minimum 
+                                            number of paths that can, in (linear) 
+                                            combination, generate all possible 
+                                            paths through a method
+                                        METHOD 
+                                          - Each non-abstract method contains at 
+                                            least one instruction. A method is 
+                                            considered as executed when at least 
+                                            one instruction has been executed
+                                        CLASS 
+                                          - A class is considered as executed 
+                                            when at least one of its methods has 
+                                            been executed. Note that JaCoCo 
+                                            considers constructors as well as 
+                                            static initializers as methods
+                                    -->
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.coveredratio.minimum}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.coveredratio.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
                         </configuration>
                     </execution>
                 </executions>

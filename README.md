@@ -94,7 +94,7 @@ export COMPUTE_POOL_ID="xxx"
 
 ```sh
 cd confluent-flink-fraud-detection-demo/fraud-detection-job
-mvn test -Dtest=com.github.krakenninja.demo.confluent.cloud.HelloTableApiJUnitTest
+mvn test -Dtest=com.github.krakenninja.demo.confluent.cloud.HelloTableApiJUnitIntegrationTest
 ```
 
 * You should be able to see the following result in your terminal 

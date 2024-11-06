@@ -1,3 +1,4 @@
 .flattened-pom.xml
 fraud-detection-job/nbproject
 fraud-detection-job/target
+dependency-reduced-pom.xml
