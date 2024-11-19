@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    
+    <parent>
+        <groupId>com.github.krakenninja</groupId>
+        <artifactId>kraken-bom</artifactId>
+        <version>1.0.0-RELEASE</version>
+    </parent>
+    
+    <groupId>com.github.krakenninja.demo</groupId>
+    <artifactId>job-demo-parent</artifactId>
+    <version>${revision}${changelist}</version>
+    <packaging>pom</packaging>
+    
+    <name>Job Demo Parent (POM)</name>
+    <url>https://github.com/krakenninja/confluent-flink-fraud-detection-demo/tree/main/job-demo-parent</url>
+    
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <revision>1.0.0</revision><!-- https://maven.apache.org/maven-ci-friendly.html -->
+        <changelist>-SNAPSHOT</changelist><!-- https://maven.apache.org/maven-ci-friendly.html -->
+    </properties>
+    
+    <modules>
+        <module>job-core</module>
+        <module>job-producer</module>
+        <module>job-consumer</module>
+    </modules>
+    
+    <dependencyManagement>
+        <dependencies>
+            <!-- Internal Dependencies -->
+            <dependency>
+                <groupId>com.github.krakenninja.demo</groupId>
+                <artifactId>job-core</artifactId>
+                <version>${revision}${changelist}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+            </plugins>
+        </pluginManagement>
+        
+        <plugins>
+            <!-- Compiler Plugin -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>${java.version}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>flatten-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <excludes>
+                        <exclude>**/*IntegrationTest.java</exclude><!-- any classes that ends with `IntegrationTest` will be skipped -->
+                    </excludes>
+                    <argLine>
+                        --add-opens=java.base/java.util=ALL-UNNAMED
+                    </argLine>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>run-test</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+    </build>
+</project>
