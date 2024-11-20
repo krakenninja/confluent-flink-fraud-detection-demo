@@ -1,0 +1,35 @@
+# Spring Boot Application YAML (for Job Manager - Consumer)
+spring:
+    application:
+        name: Job Manager (DEMO)
+    profiles:
+        # default active spring profile "confluentcloud-deployment" ; override 
+        # by setting switch/parameter '--spring.profiles.active=xxxx' , where 
+        # supported 'xxx' are : 
+        # 1.    confluentcloud-deployment
+        active: confluentcloud-deployment
+
+# Logging
+logging:
+    level:
+        root: INFO
+
+# Confluent Cloud properties (see `com.github.krakenninja.demo.flink.configuration.ConfluentCloudConfiguration`)
+confluent: 
+    cloud: 
+        properties: 
+            # cloud type (default: aws) & region (default: us-west-2)
+            client.cloud: ${CONFLUENT_CLOUD_CLI_CLOUD_TYPE:aws}
+            client.region: ${CONFLUENT_CLOUD_CLI_CLOUD_REGION:us-west-2}
+            # compute resources
+            # - get from https://confluent.cloud/settings/organizations/edit
+            client.organization-id: ${CONFLUENT_CLOUD_CLI_ORGANIZATION_ID:00000000-0000-0000-0000-000000000000}
+            # - get from https://confluent.cloud/environments
+            client.environment-id: ${CONFLUENT_CLOUD_CLI_ENVIRONMENT_ID:env-xxxxx}
+            # - get from https://confluent.cloud/environments
+            client.compute-pool-id: ${CONFLUENT_CLOUD_CLI_COMPUTE_POOL_ID:lfcp-xxxxxxxxxx}
+            # Security
+            # - get from your saved file (Flink -> API Keys)
+            client.flink-api-key: ${CONFLUENT_CLOUD_CLI_FLINK_API_KEY:XXXXXXXXXXXXXXXX}
+            # - get from your saved file (Flink -> API Keys)
+            client.flink-api-secret: ${CONFLUENT_CLOUD_CLI_FLINK_API_SECRET:XxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx}
