@@ -1,6 +1,6 @@
 package com.github.krakenninja.demo;
 
-import com.github.krakenninja.demo.flink.configuration.ConfluentCloudConfiguration;
+import com.github.krakenninja.demo.confluent.configuration.ConfluentCloudConfiguration;
 import io.confluent.flink.plugin.ConfluentTools;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +62,11 @@ public class TableApiIntegrationTest
     )
     private EnvironmentSettings environmentSettings;
     
+    @Autowired(
+        required = false
+    )
+    private TableEnvironment tableEnvironment;
+    
     @BeforeAll
     public static void setUpClass() {}
     
@@ -89,11 +94,10 @@ public class TableApiIntegrationTest
             environmentSettings
         );
         
-        // initialize the session context to get started
-        final TableEnvironment tableEnvironment = TableEnvironment.create(
-            environmentSettings
+        assertNotNull(
+            tableEnvironment
         );
-
+        
         // the Table API is centered around 'Table' objects which help in 
         // defining data pipelinesfluently. Pipelines can be defined fully 
         // programmatic...

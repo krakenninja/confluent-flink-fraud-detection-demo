@@ -13,9 +13,11 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import org.apache.flink.table.api.EnvironmentSettings;
+import org.apache.flink.table.api.TableEnvironment;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.DependsOn;
 
 /**
  * Introduce so that we can make use of Spring Boot configuration
@@ -54,20 +56,56 @@ import org.springframework.context.annotation.Configuration;
 )
 public class ConfluentCloudConfiguration
 {
+    /**
+     * Properties that is loaded from the Spring {@code application.yml}
+     * @since 1.0.0
+     */
     @Nonnull
     @NotEmpty
     private Properties properties;
     
     /**
-     * Get table API settings
+     * Get table environment session name and SQL-specific options etc.
+     * <p>
+     * Requires {@link #getTableEnvironmentSettings()}
+     * </p>
+     * @return 
+     * @since 1.0.0
+     * @see <a href="https://docs.confluent.io/cloud/current/flink/reference/table-api.html">Table API on Confluent Cloud for Apache Flink</a>
+     */
+    @Nonnull
+    @Bean(
+        "tableEnvironment"
+    )
+    @DependsOn(
+        value = {
+            "tableEnvironmentSettings"
+        }
+    )
+    public TableEnvironment getTableEnvironment()
+    {
+        return TableEnvironment.create(
+            getTableEnvironmentSettings()
+        );
+    }
+
+    /**
+     * Get table environment settings (Confluent Cloud settings ; i.e. cloud, 
+     * region, org, env, compute pool, key and secret)
+     * <p>
+     * The settings are defined/configured in the Spring {@code application.yml}
+     * </p>
      * @return                                  {@link org.apache.flink.table.api.EnvironmentSettings}, 
      *                                          never {@code null}
      * @since 1.0.0
      * @see io.confluent.flink.plugin.ConfluentSettings
+     * @see <a href="https://docs.confluent.io/cloud/current/flink/reference/table-api.html">Table API on Confluent Cloud for Apache Flink</a>
      */
     @Nonnull
-    @Bean
-    public EnvironmentSettings getTableApiSettings()
+    @Bean(
+        "tableEnvironmentSettings"
+    )
+    public EnvironmentSettings getTableEnvironmentSettings()
     {
         final org.apache.flink.configuration.Configuration confluentCloudConfiguration = org.apache.flink.configuration.Configuration.fromMap(
             getProperties().entrySet().stream().filter(
