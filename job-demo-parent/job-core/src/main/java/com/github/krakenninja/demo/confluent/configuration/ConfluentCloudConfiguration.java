@@ -1,4 +1,4 @@
-package com.github.krakenninja.demo.flink.configuration;
+package com.github.krakenninja.demo.confluent.configuration;
 
 import io.confluent.flink.plugin.ConfluentSettings;
 import jakarta.annotation.Nonnull;
