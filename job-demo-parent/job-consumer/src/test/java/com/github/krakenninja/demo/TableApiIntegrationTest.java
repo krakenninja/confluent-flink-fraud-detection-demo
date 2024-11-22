@@ -1,6 +1,7 @@
 package com.github.krakenninja.demo;
 
 import com.github.krakenninja.demo.confluent.configuration.ConfluentCloudConfiguration;
+import com.github.krakenninja.demo.confluent.schema.hello.HelloTableRecord;
 import io.confluent.flink.plugin.ConfluentTools;
 import java.util.List;
 import lombok.extern.slf4j.Slf4j;
@@ -31,6 +32,9 @@ import org.springframework.boot.test.context.SpringBootTest;
  *   export CONFLUENT_CLOUD_CLI_COMPUTE_POOL_ID="lfcp-xxxxxx"
  *   export CONFLUENT_CLOUD_CLI_FLINK_API_KEY="xxxxxxxxxxxxxxxx"
  *   export CONFLUENT_CLOUD_CLI_FLINK_API_SECRET="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+ *   export CONFLUENT_TABLE_API_LOCAL_TIMEZONE="UTC"
+ *   export CONFLUENT_TABLE_API_USE_CATALOG="xxxxxxxxxxxxxxxx"
+ *   export CONFLUENT_TABLE_API_USE_DATABASE="xxxxxxxxxxxxxxxx"
  * </pre>
  * </p>
  * <p>
@@ -44,6 +48,7 @@ import org.springframework.boot.test.context.SpringBootTest;
  * @since 1.0.0
  * @author Christopher CKW
  * @see <a href="https://github.com/confluentinc/flink-table-api-java-examples">Java Examples for Table API on Confluent Cloud</a>
+ * @see <a href="https://docs.confluent.io/cloud/current/flink/get-started/quick-start-java-table-api.html">Java Table API Quick Start on Confluent Cloud for Apache Flink</a>
  */
 @Slf4j
 @SpringBootTest
@@ -66,6 +71,11 @@ public class TableApiIntegrationTest
         required = false
     )
     private TableEnvironment tableEnvironment;
+    
+    @Autowired(
+        required = false
+    )
+    private HelloTableRecord helloTableRecord;
     
     @BeforeAll
     public static void setUpClass() {}
@@ -135,6 +145,19 @@ public class TableApiIntegrationTest
                     column
                 );
             }
+        );
+    }
+    
+    @Test
+    public void create_HelloTableRecord_ConfluentCloudConfiguration_Expect_OK()
+    {
+        assertNotNull(
+            helloTableRecord
+        );
+        
+        final Table table = helloTableRecord.getTable();
+        assertNotNull(
+            table
         );
     }
 }

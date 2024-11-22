@@ -1,12 +1,19 @@
 package com.github.krakenninja.demo.confluent.configuration;
 
+import com.github.krakenninja.demo.exceptions.InternalException;
+import com.github.krakenninja.demo.exceptions.InvalidConfigurationException;
 import io.confluent.flink.plugin.ConfluentSettings;
 import jakarta.annotation.Nonnull;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.AbstractMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
+import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +27,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.DependsOn;
 
 /**
- * Introduce so that we can make use of Spring Boot configuration
+ * Confluent Cloud : Spring Boot configuration
  * <p>
  * Looking at Spring Boot context resource "{@code application.yml}" having 
  * settings structure : 
@@ -38,11 +45,16 @@ import org.springframework.context.annotation.DependsOn;
  *         # Security
  *         client.flink-api-key: XXXXXXXXXXXXXXXX
  *         client.flink-api-secret: XxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx
+ *         # table API
+ *         client.context: XXXXXXXXXXXXXXXX
+ *         sql.local-time-zone: UTC
  * </pre>
  * </p>
  * @since 1.0.0
  * @author Christopher CKW
  * @see org.apache.flink.table.api.EnvironmentSettings.Builder#withConfiguration(org.apache.flink.configuration.Configuration) 
+ * @see io.confluent.flink.plugin.ConfluentSettings
+ * @see io.confluent.flink.plugin.ConfluentPluginOptions
  */
 @Accessors(
     chain = true
@@ -57,6 +69,18 @@ import org.springframework.context.annotation.DependsOn;
 public class ConfluentCloudConfiguration
 {
     /**
+     * Bean name for {@link org.apache.flink.table.api.TableEnvironment}
+     * @since 1.0.0
+     */
+    public static final String BEAN_NAME_TABLE_ENVIRONMENT = "tableEnvironment";
+    
+    /**
+     * Bean name for {@link org.apache.flink.table.api.EnvironmentSettings}
+     * @since 1.0.0
+     */
+    public static final String BEAN_NAME_ENVIRONMENT_SETTINGS = "environmentSettings";
+    
+    /**
      * Properties that is loaded from the Spring {@code application.yml}
      * @since 1.0.0
      */
@@ -65,9 +89,18 @@ public class ConfluentCloudConfiguration
     private Properties properties;
     
     /**
+     * My custom table API user defined configuration that is not available by 
+     * Confluent Cloud ; this is primarily used for my own to define additional 
+     * configuration
+     * @since 1.0.0
+     */
+    @Nonnull
+    private TableApiUserDefined tableApi;
+    
+    /**
      * Get table environment session name and SQL-specific options etc.
      * <p>
-     * Requires {@link #getTableEnvironmentSettings()}
+     * Requires {@link #getEnvironmentSettings()}
      * </p>
      * @return 
      * @since 1.0.0
@@ -75,22 +108,22 @@ public class ConfluentCloudConfiguration
      */
     @Nonnull
     @Bean(
-        "tableEnvironment"
+        BEAN_NAME_TABLE_ENVIRONMENT
     )
     @DependsOn(
         value = {
-            "tableEnvironmentSettings"
+            BEAN_NAME_ENVIRONMENT_SETTINGS
         }
     )
     public TableEnvironment getTableEnvironment()
     {
         return TableEnvironment.create(
-            getTableEnvironmentSettings()
+            getEnvironmentSettings()
         );
     }
-
+    
     /**
-     * Get table environment settings (Confluent Cloud settings ; i.e. cloud, 
+     * Get confluent environment settings (Confluent Cloud settings ; i.e. cloud, 
      * region, org, env, compute pool, key and secret)
      * <p>
      * The settings are defined/configured in the Spring {@code application.yml}
@@ -101,13 +134,56 @@ public class ConfluentCloudConfiguration
      * @see io.confluent.flink.plugin.ConfluentSettings
      * @see <a href="https://docs.confluent.io/cloud/current/flink/reference/table-api.html">Table API on Confluent Cloud for Apache Flink</a>
      */
+    public EnvironmentSettings getConfluentSettings()
+    {
+        // code sets the session name and SQL-specific options
+        return Optional.ofNullable(
+            ConfluentSettings.newBuilderFromFile(
+                getPropertiesAsFile()
+            )
+        ).map(
+            confluentSettingsToProcess -> {
+                if(getProperties().containsKey("client.context"))
+                {
+                    confluentSettingsToProcess.setContextName(
+                        getProperties().getProperty(
+                            "client.context"
+                        )
+                    );
+                }
+                if(getProperties().containsKey("sql.local-time-zone"))
+                {
+                    confluentSettingsToProcess.setOption(
+                        "sql.local-time-zone",
+                        getProperties().getProperty(
+                            "sql.local-time-zone"
+                        )
+                    );
+                }
+                return confluentSettingsToProcess.build();
+            }
+        ).orElseThrow(
+        );
+    }
+    
+    /**
+     * Get environment settings (Confluent Cloud settings ; i.e. cloud, 
+     * region, org, env, compute pool, key and secret)
+     * <p>
+     * The settings are defined/configured in the Spring {@code application.yml}
+     * </p>
+     * @return                                  {@link org.apache.flink.table.api.EnvironmentSettings}, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     * @see <a href="https://docs.confluent.io/cloud/current/flink/reference/table-api.html">Table API on Confluent Cloud for Apache Flink</a>
+     */
     @Nonnull
     @Bean(
-        "tableEnvironmentSettings"
+        BEAN_NAME_ENVIRONMENT_SETTINGS
     )
-    public EnvironmentSettings getTableEnvironmentSettings()
+    protected EnvironmentSettings getEnvironmentSettings()
     {
-        final org.apache.flink.configuration.Configuration confluentCloudConfiguration = org.apache.flink.configuration.Configuration.fromMap(
+        final org.apache.flink.configuration.Configuration configuration = org.apache.flink.configuration.Configuration.fromMap(
             getProperties().entrySet().stream().filter(
                 entryToProcess -> String.class.isAssignableFrom(
                     entryToProcess.getKey().getClass()
@@ -131,7 +207,162 @@ public class ConfluentCloudConfiguration
             )
         );
         return new EnvironmentSettings.Builder().withConfiguration(
-            confluentCloudConfiguration
+            configuration
         ).build();
+    }
+    
+    /**
+     * Get the properties as {@link File}
+     * @return                                  {@link File}, never {@code null}
+     * @throws InternalException                If unable to create file
+     * @since 1.0.0
+     */
+    @Nonnull
+    protected File getPropertiesAsFile()
+    {
+        try
+        {
+            final File tmpProperties = File.createTempFile(
+                String.format(
+                    "confluent-cloud-%s", 
+                    UUID.randomUUID().toString()
+                ),
+                ".properties"
+            );
+            tmpProperties.deleteOnExit();
+            getProperties().store(new FileOutputStream(
+                tmpProperties),
+                null
+            );
+            return tmpProperties;
+        }
+        catch(Exception e)
+        {
+            throw new InternalException(
+                String.format(
+                    "Get properties as object `%s` type ENCOUNTERED FAILURE ; %s",
+                    File.class.getName(),
+                    e.getMessage()
+                ),
+                e
+            );
+        }
+    }
+    
+    /**
+     * Custom user-defined table API configuration
+     * @author Christopher CKW
+     * @since 1.0.0
+     */
+    @Accessors(
+        chain = true
+    )
+    @Getter
+    @Setter
+    @NoArgsConstructor
+    public static final class TableApiUserDefined
+    {
+        /**
+         * Use catalog property name
+         * @since 1.0.0
+         * @see org.apache.flink.table.api.TableEnvironment#useCatalog(java.lang.String) 
+         */
+        private static final String PROPERTY_NAME_USE_CATALOG = "use.catalog";
+        
+        /**
+         * Use database property name
+         * @since 1.0.0
+         * @see org.apache.flink.table.api.TableEnvironment#useDatabase(java.lang.String) 
+         */
+        private static final String PROPERTY_NAME_USE_DATABASE = "use.database";
+        
+        /**
+         * Properties to obtain the custom configuration
+         * @since 1.0.0
+         */
+        private Properties properties;
+        
+        /**
+         * Get "use catalog"
+         * @return 
+         * @since 1.0.0
+         * @see org.apache.flink.table.api.TableEnvironment#useCatalog(java.lang.String) 
+         */
+        @Nonnull
+        @NotBlank
+        @NotEmpty
+        public String getUseCatalog()
+        {
+            return Optional.ofNullable(
+                getProperties()
+            ).filter(
+                propertiesToProcess -> propertiesToProcess.containsKey(
+                    PROPERTY_NAME_USE_CATALOG
+                )
+            ).map(
+                propertiesToProcess -> propertiesToProcess.getProperty(
+                    PROPERTY_NAME_USE_CATALOG
+                )
+            ).filter(
+                useCatalogToProcess -> !useCatalogToProcess.trim().equals(
+                    ""
+                )
+            ).orElseThrow(
+                () -> getInvalidConfigurationException(
+                    PROPERTY_NAME_USE_CATALOG
+                )
+            );
+        }
+        
+        /**
+         * Get "use database"
+         * @return 
+         * @since 1.0.0
+         * @see org.apache.flink.table.api.TableEnvironment#useDatabase(java.lang.String) 
+         */
+        @Nonnull
+        @NotBlank
+        @NotEmpty
+        public String getUseDatabase()
+        {
+            return Optional.ofNullable(
+                getProperties()
+            ).filter(
+                propertiesToProcess -> propertiesToProcess.containsKey(
+                    PROPERTY_NAME_USE_DATABASE
+                )
+            ).map(
+                propertiesToProcess -> propertiesToProcess.getProperty(
+                    PROPERTY_NAME_USE_DATABASE
+                )
+            ).filter(
+                useDatabaseToProcess -> !useDatabaseToProcess.trim().equals(
+                    ""
+                )
+            ).orElseThrow(
+                () -> getInvalidConfigurationException(
+                    PROPERTY_NAME_USE_DATABASE
+                )
+            );
+        }
+        
+        /**
+         * Shared method to return {@link InvalidConfigurationException} instance
+         * @param configurationName             Configuration name
+         * @return 
+         */
+        @Nonnull
+        private InvalidConfigurationException getInvalidConfigurationException(@Nonnull
+                                                                               @NotBlank
+                                                                               @NotEmpty
+                                                                               final String configurationName)
+        {
+            return new InvalidConfigurationException(
+                String.format(
+                    "Spring Boot configuration name '%s' IS NOT AVAILABLE",
+                    configurationName
+                )
+            );
+        }
     }
 }

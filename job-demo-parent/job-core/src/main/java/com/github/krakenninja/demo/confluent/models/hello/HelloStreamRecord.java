@@ -1,4 +1,4 @@
-package com.github.krakenninja.demo.models.imp;
+package com.github.krakenninja.demo.confluent.models.hello;
 
 import com.github.krakenninja.demo.models.abs.BaseStreamRecord;
 import lombok.Data;

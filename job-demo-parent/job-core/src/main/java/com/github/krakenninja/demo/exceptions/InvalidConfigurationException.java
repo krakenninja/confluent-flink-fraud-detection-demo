@@ -8,7 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
- * Unprocessable entity exception
+ * Invalid/bad configuration exception
  * @since 1.0.0
  * @author Christopher CKW
  */
@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 @Setter
 @StandardException
 @ResponseStatus(
-    value = HttpStatus.UNPROCESSABLE_ENTITY
+    value = HttpStatus.INTERNAL_SERVER_ERROR
 )
-public class UnprocessableEntityException
+public class InvalidConfigurationException
        extends InternalException
 {
 }
