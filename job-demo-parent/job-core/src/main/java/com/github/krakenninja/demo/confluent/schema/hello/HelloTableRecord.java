@@ -37,12 +37,42 @@ import org.springframework.stereotype.Component;
 @Component
 public class HelloTableRecord
 {
+    /**
+     * Reference to the configuration {@link com.github.krakenninja.demo.confluent.configuration.ConfluentCloudConfiguration}
+     * @since 1.0.0
+     */
     @Getter(
         AccessLevel.PROTECTED
     )
     @NonNull
     private final ConfluentCloudConfiguration confluentCloudConfiguration;
     
+    /**
+     * Column name {@code uuid}
+     * @since 1.0.0
+     */
+    private static final String COLUMN_NAME_UUID = "uuid";
+    
+    /**
+     * Column name {@code message}
+     * <p>
+     * Holds bytes of {@link com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord#toBytes()} 
+     * as the message value
+     * </p>
+     * @since 1.0.0
+     */
+    private static final String COLUMN_NAME_MESSAGE = "message";
+    
+    /**
+     * Get table for model {@link com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord}
+     * <p>
+     * If the table not found, it attempts to call {@link #createTable()}
+     * </p>
+     * @return                                  {@link org.apache.flink.table.api.Table}, 
+     *                                          never {@code null}
+     * @throws InternalException                If unable to get the table
+     * @since 1.0.0
+     */
     @Nonnull
     public Table getTable()
     {
@@ -69,6 +99,10 @@ public class HelloTableRecord
                 throw e;
             }
         }
+        catch(InternalException e)
+        {
+            throw e;
+        }
         catch(Exception e)
         {
             throw new InternalException(
@@ -82,19 +116,49 @@ public class HelloTableRecord
         }
     }
     
+    /**
+     * Create table for model {@link com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord}
+     * @return                                  {@link org.apache.flink.table.api.Table}, 
+     *                                          never {@code null}
+     * @throws InternalException                If unable to create the table
+     * @since 1.0.0
+     */
     @Nonnull
     public Table createTable()
     {
         final String tablePath = getClass().getSimpleName();
-        getTableEnvironment().createTable(
-            tablePath,
-            getTableDescriptor()
-        );
-        return getTableEnvironment().from(
-            tablePath
-        );
+        try
+        {
+            getTableEnvironment().createTable(
+                tablePath,
+                getTableDescriptor()
+            );
+            return getTableEnvironment().from(
+                tablePath
+            );
+        }
+        catch(Exception e)
+        {
+            throw new InternalException(
+                String.format(
+                    "Create table '%s' ENCOUNTERED FAILURE ; %s",
+                    tablePath,
+                    e.getMessage()
+                ),
+                e
+            );
+        }
     }
     
+    /**
+     * Get {@link org.apache.flink.table.api.TableEnvironment} specific to 
+     * manage the CRUD operation(s) on this table 
+     * {@link com.github.krakenninja.demo.confluent.schema.hello.HelloTableRecord} 
+     * type
+     * @return                                  {@link org.apache.flink.table.api.TableEnvironment}, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
     @Nonnull
     protected TableEnvironment getTableEnvironment()
     {
@@ -110,14 +174,26 @@ public class HelloTableRecord
         return tableEnvironment;
     }
     
+    /**
+     * Table descriptor for creating table programmatically
+     * @return                                  {@link org.apache.flink.table.api.TableDescriptor}, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
     @Nonnull
     protected TableDescriptor getTableDescriptor()
     {
+        // Create a table programmatically:
+        // The table...
+        //   - is backed by an equally named "HelloTableRecord" Kafka topic
+        //   - stores its payload in JSON
+        //   - will reference two Schema Registry subjects for Kafka message key and value
+        //   - is distributed across 4 Kafka partitions based on the Kafka message key "uuid"
         return ConfluentTableDescriptor.forManaged().schema(
             getSchema()
         ).distributedBy(
             4, 
-            "uuid"
+            COLUMN_NAME_UUID
         ).option(
             "kafka.retention.time", 
             "0"
@@ -130,19 +206,25 @@ public class HelloTableRecord
         ).build();
     }
     
+    /**
+     * Table schema for creating table programmatically
+     * @return                                  {@link org.apache.flink.table.api.Schema}, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
     @Nonnull
     protected Schema getSchema()
     {
         return Schema.newBuilder().column(
-            "uuid", 
+            COLUMN_NAME_UUID, 
             DataTypes.CHAR(
                 36 // `java.util.UUID` contains 32 hex digits along with 4 "-" symbols
             ).notNull()
         ).column(
-            "message", // serialized form of `com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord`
+            COLUMN_NAME_MESSAGE, // serialized form of `com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord`
             DataTypes.BYTES().notNull()
         ).primaryKey(
-            "uuid"
+            COLUMN_NAME_UUID
         ).watermark(
             // access $rowtime system column
             // https://docs.confluent.io/cloud/current/flink/concepts/timely-stream-processing.html
