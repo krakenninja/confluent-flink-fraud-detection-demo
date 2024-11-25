@@ -1,13 +1,17 @@
 package com.github.krakenninja.demo;
 
 import com.github.krakenninja.demo.confluent.configuration.ConfluentCloudConfiguration;
+import com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord;
 import com.github.krakenninja.demo.confluent.schema.hello.HelloTableRecord;
 import io.confluent.flink.plugin.ConfluentTools;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.table.api.EnvironmentSettings;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.api.TableResult;
 import org.apache.flink.types.Row;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
@@ -15,6 +19,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -55,6 +62,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 @ExtendWith(
     MockitoExtension.class
 )
+@TestMethodOrder(
+    MethodOrderer.OrderAnnotation.class
+)
 public class TableApiIntegrationTest
 {
     @Autowired(
@@ -93,6 +103,7 @@ public class TableApiIntegrationTest
      * If this runs, your Confluent Cloud setup and configuration is GOOD & 
      * READY
      */
+    @Order(1)
     @Test
     public void check_ConfluentCloudConfiguration_Expect_OK()
     {
@@ -148,6 +159,7 @@ public class TableApiIntegrationTest
         );
     }
     
+    @Order(2)
     @Test
     public void create_HelloTableRecord_ConfluentCloudConfiguration_Expect_OK()
     {
@@ -159,5 +171,69 @@ public class TableApiIntegrationTest
         assertNotNull(
             table
         );
+    }
+    
+    @Order(3)
+    @Test
+    public void insert_Sync_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK()
+    {
+        assertNotNull(
+            helloTableRecord
+        );
+        
+        final TableResult tableResult = helloTableRecord.executeInsertPipelineSync(
+            new HelloStreamRecord().setWho(
+                "John Doe"
+            ),
+            new HelloStreamRecord().setWho(
+                "Jane Doe"
+            )
+        );
+        assertNotNull(
+            tableResult
+        );
+        tableResult.print();
+    }
+    
+    @Order(4)
+    @Test
+    public void insert_Async_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK()
+    {
+        assertNotNull(
+            helloTableRecord
+        );
+        
+        final Future<TableResult> futureTableResult = helloTableRecord.executeInsertPipelineAsync(
+            new HelloStreamRecord().setWho(
+                "Alice"
+            ),
+            new HelloStreamRecord().setWho(
+                "Bob"
+            ),
+            new HelloStreamRecord().setWho(
+                "Charlie"
+            )
+        );
+        
+        try
+        {
+            final TableResult tableResult = futureTableResult.get(
+                60, 
+                TimeUnit.SECONDS
+            );
+            assertNotNull(
+                tableResult
+            );
+            tableResult.print();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace(
+                System.err
+            );
+            fail(
+                e.getMessage()
+            );
+        }
     }
 }

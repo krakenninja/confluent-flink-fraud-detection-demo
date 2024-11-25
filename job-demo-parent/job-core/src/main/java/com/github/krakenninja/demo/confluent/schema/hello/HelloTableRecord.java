@@ -1,22 +1,33 @@
 package com.github.krakenninja.demo.confluent.schema.hello;
 
 import com.github.krakenninja.demo.confluent.configuration.ConfluentCloudConfiguration;
+import com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord;
 import com.github.krakenninja.demo.exceptions.InternalException;
 import io.confluent.flink.plugin.ConfluentTableDescriptor;
 import jakarta.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import org.apache.flink.table.api.ApiExpression;
 import org.apache.flink.table.api.DataTypes;
 import static org.apache.flink.table.api.Expressions.*;
 import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableDescriptor;
 import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.api.TablePipeline;
+import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.ValidationException;
+import org.apache.flink.table.types.DataType;
+import org.apache.flink.types.Row;
 import org.springframework.stereotype.Component;
 
 /**
@@ -62,6 +73,130 @@ public class HelloTableRecord
      * @since 1.0.0
      */
     private static final String COLUMN_NAME_MESSAGE = "message";
+    
+    /**
+     * Execute the insert pipeline asynchronously
+     * @param rows                              Rows to insert. Must not be 
+     *                                          {@code null} or empty length
+     * @return                                  A future {@link org.apache.flink.table.api.TableResult},
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
+    @Nonnull
+    public Future<TableResult> executeInsertPipelineAsync(final HelloStreamRecord... rows)
+    {
+        return Executors.newSingleThreadExecutor().submit(
+            () -> {
+                return createInsertPipeline(
+                    Arrays.stream(
+                        rows
+                    ).map(
+                        this::createRow
+                    ).toArray(
+                        s -> new ApiExpression[s]
+                    )
+                ).execute();
+            }
+        );
+    }
+    
+    /**
+     * Execute the insert pipeline synchronously
+     * @param rows                              Rows to insert. Must not be 
+     *                                          {@code null} or empty length
+     * @return                                  {@link org.apache.flink.table.api.TableResult},
+     *                                          never {@code null}
+     * @throws InternalException                If unable to insert pipeline synchronously
+     * @since 1.0.0
+     */
+    @Nonnull
+    public TableResult executeInsertPipelineSync(final HelloStreamRecord... rows)
+    {
+        try
+        {
+            final TableResult tableResult = createInsertPipeline(
+                Arrays.stream(
+                    rows
+                ).map(
+                    this::createRow
+                ).toArray(
+                    s -> new ApiExpression[s]
+                )
+            ).execute();
+            tableResult.await();
+            return tableResult;
+        }
+        catch(Exception e)
+        {
+            throw new InternalException(
+                String.format(
+                    "Execute insert pipeline synchronously ENCOUNTERED FAILURE ; %s",
+                    e.getMessage()
+                ),
+                e
+            );
+        }
+    }
+    
+    /**
+     * Create insert pipeline for the {@code rows}
+     * @param rows                              Rows to insert. Must not be 
+     *                                          {@code null} or empty length
+     * @return                                  {@link org.apache.flink.table.api.TablePipeline}, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
+    @Nonnull
+    protected TablePipeline createInsertPipeline(final ApiExpression... rows)
+    {
+        final String tablePath = getClass().getSimpleName();
+        return getTableEnvironment().fromValues(
+            rows
+        ).insertInto(
+            tablePath
+        );
+    }
+    
+    /**
+     * Create a row (NOTE: This is not inserted yet)
+     * @param helloStreamRecord                 {@link HelloStreamRecord}. Must 
+     *                                          not be {@code null}
+     * @return                                  {@link org.apache.flink.types.Row}, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
+    @Nonnull
+    protected ApiExpression createRow(@Nonnull
+                                      final HelloStreamRecord helloStreamRecord)
+    {
+        return row(
+            UUID.randomUUID().toString(), // the "uuid", 
+            helloStreamRecord.toJson() // the "message"
+        );
+    }
+    
+    /**
+     * Get datatype row 
+     * @return                                  {@link org.apache.flink.table.types.DataType}, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
+    @Nonnull
+    protected DataType dataTypeRow()
+    {
+        return DataTypes.ROW(
+            DataTypes.FIELD(
+                COLUMN_NAME_UUID, 
+                DataTypes.CHAR(
+                    36
+                )
+            ),
+            DataTypes.FIELD(
+                COLUMN_NAME_MESSAGE, 
+                DataTypes.STRING()
+            )
+        );
+    }
     
     /**
      * Get table for model {@link com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord}
@@ -222,7 +357,7 @@ public class HelloTableRecord
             ).notNull()
         ).column(
             COLUMN_NAME_MESSAGE, // serialized form of `com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord`
-            DataTypes.BYTES().notNull()
+            DataTypes.STRING()
         ).primaryKey(
             COLUMN_NAME_UUID
         ).watermark(

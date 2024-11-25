@@ -1,5 +1,6 @@
 package com.github.krakenninja.demo.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import static com.fasterxml.jackson.annotation.JsonInclude.*;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -44,6 +45,7 @@ public interface Base<T extends Base<T>>
      *                                          never {@code null}
      * @since 1.0.0
      */
+    @JsonIgnore
     @Nonnull
     default ObjectMapper getObjectMapper()
     {
@@ -65,6 +67,7 @@ public interface Base<T extends Base<T>>
      * @throws UnprocessableEntityException     If write/serialization failure
      * @since 1.0.0
      */
+    @JsonIgnore
     @Nonnull
     @NotEmpty
     default byte[] toBytes()
@@ -150,6 +153,7 @@ public interface Base<T extends Base<T>>
      * @throws UnprocessableEntityException     If write/serialization failure
      * @since 1.0.0
      */
+    @JsonIgnore
     @Nonnull
     @NotBlank
     @NotEmpty
@@ -200,6 +204,7 @@ public interface Base<T extends Base<T>>
      * @throws UnprocessableEntityException     If write/serialization failure
      * @since 1.0.0
      */
+    @JsonIgnore
     @Nonnull
     default Map<String, Object> toMap()
     {
