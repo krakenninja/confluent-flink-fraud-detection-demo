@@ -16,8 +16,10 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.table.api.ApiExpression;
 import org.apache.flink.table.api.DataTypes;
+import org.apache.flink.table.api.EnvironmentSettings;
 import static org.apache.flink.table.api.Expressions.*;
 import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.Table;
@@ -39,6 +41,7 @@ import org.springframework.stereotype.Component;
  * @see <a href="https://www.confluent.io/blog/getting-started-with-apache-flink-table-api/">Your Guide to the Apache Flink® Table API: An In-Depth Exploration</a>
  * @see <a href="https://docs.confluent.io/platform/current/ksqldb/developer-guide/ksqldb-reference/create-table.html">CREATE TABLE statement in ksqlDB for Confluent Platform</a>
  */
+@Slf4j
 @Accessors(
     chain = true
 )
@@ -297,8 +300,14 @@ public class HelloTableRecord
     @Nonnull
     protected TableEnvironment getTableEnvironment()
     {
+        final EnvironmentSettings environmentSettings = getConfluentCloudConfiguration().getConfluentSettings();
+        log.info(
+            "Confluent settings IS STREAMING MODE : {}",
+            environmentSettings.isStreamingMode()
+        );
+        
         final TableEnvironment tableEnvironment = TableEnvironment.create(
-            getConfluentCloudConfiguration().getConfluentSettings()
+            environmentSettings
         );
         tableEnvironment.useCatalog(
             getConfluentCloudConfiguration().getTableApi().getUseCatalog()

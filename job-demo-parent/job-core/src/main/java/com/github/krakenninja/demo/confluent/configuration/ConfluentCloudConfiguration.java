@@ -136,10 +136,11 @@ public class ConfluentCloudConfiguration
      */
     public EnvironmentSettings getConfluentSettings()
     {
+        final File confluentSettingProperties = getPropertiesAsFile();
         // code sets the session name and SQL-specific options
         return Optional.ofNullable(
             ConfluentSettings.newBuilderFromFile(
-                getPropertiesAsFile()
+                confluentSettingProperties
             )
         ).map(
             confluentSettingsToProcess -> {
@@ -163,6 +164,14 @@ public class ConfluentCloudConfiguration
                 return confluentSettingsToProcess.build();
             }
         ).orElseThrow(
+            () -> new InternalException(
+                String.format(
+                    "New builer from file '%s' using `%s::newBuilderFromFile(%s)` IS NULL",
+                    confluentSettingProperties.getPath(),
+                    ConfluentSettings.class.getName(),
+                    File.class.getName()
+                )
+            )
         );
     }
     
