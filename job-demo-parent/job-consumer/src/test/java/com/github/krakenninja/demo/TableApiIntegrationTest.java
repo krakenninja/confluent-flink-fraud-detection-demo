@@ -157,6 +157,10 @@ public class TableApiIntegrationTest
                 );
             }
         );
+        log.info(
+            "\n\n=== Integration test method `{}::check_ConfluentCloudConfiguration_Expect_OK()` COMPLETED ===\n",
+            getClass().getName()
+        );
     }
     
     @Order(2)
@@ -171,9 +175,24 @@ public class TableApiIntegrationTest
         assertNotNull(
             table
         );
+        log.info(
+            "\n\n=== Integration test method `{}::create_HelloTableRecord_ConfluentCloudConfiguration_Expect_OK()` COMPLETED ===\n",
+            getClass().getName()
+        );
     }
     
-    @Order(3)
+//    @Order(3)
+//    @Test
+//    public void select_BeforeInsert_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK()
+//    {
+//        select_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK();
+//        log.info(
+//            "\nIntegration test method `{}::select_BeforeInsert_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK()` COMPLETED\n",
+//            getClass().getName()
+//        );
+//    }
+    
+    @Order(4)
     @Test
     public void insert_Sync_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK()
     {
@@ -193,6 +212,10 @@ public class TableApiIntegrationTest
             tableResult
         );
         tableResult.print();
+        log.info(
+            "\n\n=== Integration test method `{}::insert_Sync_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK()` COMPLETED ===\n",
+            getClass().getName()
+        );
     }
     
     @Order(4)
@@ -235,5 +258,9 @@ public class TableApiIntegrationTest
                 e.getMessage()
             );
         }
+        log.info(
+            "\n\n=== Integration test method `{}::insert_Async_HelloTableRecords_ConfluentCloudConfiguration_Expect_OK()` COMPLETED ===\n",
+            getClass().getName()
+        );
     }
 }

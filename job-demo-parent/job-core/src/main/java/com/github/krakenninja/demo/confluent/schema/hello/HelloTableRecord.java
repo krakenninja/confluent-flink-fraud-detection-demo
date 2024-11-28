@@ -5,6 +5,8 @@ import com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord;
 import com.github.krakenninja.demo.exceptions.InternalException;
 import io.confluent.flink.plugin.ConfluentTableDescriptor;
 import jakarta.annotation.Nonnull;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
@@ -66,6 +68,12 @@ public class HelloTableRecord
      * @since 1.0.0
      */
     private static final String COLUMN_NAME_UUID = "uuid";
+    
+    /**
+     * Column name {@code event_time}
+     * @since 1.0.0
+     */
+    private static final String COLUMN_NAME_EVENTTIME = "event_time";
     
     /**
      * Column name {@code message}
@@ -367,14 +375,22 @@ public class HelloTableRecord
         ).column(
             COLUMN_NAME_MESSAGE, // serialized form of `com.github.krakenninja.demo.confluent.models.hello.HelloStreamRecord`
             DataTypes.STRING()
-        ).primaryKey(
+        ).column(
+            COLUMN_NAME_EVENTTIME, 
+            DataTypes.TIMESTAMP_LTZ(
+                3 // see `org.apache.flink.table.types.logical.LocalZonedTimestampType`
+                  // Range: 0 to 9 (inclusive)
+                  //     0: No fractional seconds
+                  //     3: Millisecond precision (default)
+                  //     6: Microsecond precision
+                  //     9: Nanosecond precision
+            )
+        ) .primaryKey(
             COLUMN_NAME_UUID
         ).watermark(
-            // access $rowtime system column
-            // https://docs.confluent.io/cloud/current/flink/concepts/timely-stream-processing.html
-            "$rowtime", 
+            COLUMN_NAME_EVENTTIME, 
             $(
-                "$rowtime"
+                COLUMN_NAME_EVENTTIME
             ).minus(
                 lit(
                     5
