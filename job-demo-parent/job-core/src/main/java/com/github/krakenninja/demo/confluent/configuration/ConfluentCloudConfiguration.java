@@ -98,13 +98,33 @@ public class ConfluentCloudConfiguration
     private TableApiUserDefined tableApi;
     
     /**
-     * Get table environment session name and SQL-specific options etc.
+     * Get managed table environment singleton bean ; do not use this if you 
+     * are going to change the catalog/database, instead construct a new 
+     * {@link org.apache.flink.table.api.TableEnvironment} using sample code 
+     * snippet below : 
+     * <pre>
+     *   // access the confluent settings
+     *   org.apache.flink.table.api.EnvironmentSettings environmentSettings = confluentCloudConfiguration.getConfluentSettings();
+     *   
+     *   // create the table environment settings
+     *   org.apache.flink.table.api.TableEnvironment tableEnvironment = org.apache.flink.table.api.TableEnvironment.create(
+     *     environmentSettings
+     *   );
+     *   
+     *   // change the catalog
+     *   tableEnvironment.useCatalog("examples");
+     * 
+     *   // change the database
+     *   tableEnvironment.useDatabase("marketplace");
+     *   
+     * </pre>
      * <p>
      * Requires {@link #getEnvironmentSettings()}
      * </p>
      * @return 
      * @since 1.0.0
      * @see <a href="https://docs.confluent.io/cloud/current/flink/reference/table-api.html">Table API on Confluent Cloud for Apache Flink</a>
+     * @see <a href="https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises/blob/main/solutions/01-connecting-to-confluent-cloud/src/main/java/marketplace/Marketplace.java">learn-apache-flink-table-api-for-java-exercises/solutions/01-connecting-to-confluent-cloud/src/main/java/marketplace/Marketplace.java</a>
      */
     @Nonnull
     @Bean(
@@ -134,6 +154,7 @@ public class ConfluentCloudConfiguration
      * @see io.confluent.flink.plugin.ConfluentSettings
      * @see <a href="https://docs.confluent.io/cloud/current/flink/reference/table-api.html">Table API on Confluent Cloud for Apache Flink</a>
      */
+    @Nonnull
     public EnvironmentSettings getConfluentSettings()
     {
         final File confluentSettingProperties = getPropertiesAsFile();
@@ -239,8 +260,10 @@ public class ConfluentCloudConfiguration
                 ".properties"
             );
             tmpProperties.deleteOnExit();
-            getProperties().store(new FileOutputStream(
-                tmpProperties),
+            getProperties().store(
+                new FileOutputStream(
+                    tmpProperties
+                ),
                 null
             );
             return tmpProperties;

@@ -1,0 +1,50 @@
+# Spring Boot Application YAML (for Job Manager - Consumer)
+spring:
+    application:
+        name: Job Manager (DEMO)
+    profiles:
+        # default active spring profile "confluentcloud-deployment" ; override 
+        # by setting switch/parameter '--spring.profiles.active=xxxx' , where 
+        # supported 'xxx' are : 
+        # 1.    confluentcloud-deployment
+        active: confluentcloud-deployment
+
+# Logging
+logging:
+    level:
+        root: INFO
+
+# Confluent Cloud properties (see `com.github.krakenninja.demo.flink.configuration.ConfluentCloudConfiguration`)
+confluent: 
+    cloud: 
+        properties: 
+            # === Cloud Service ===
+            # - get from https://confluent.cloud/environments ; this would be your choice during Cloud configuration; (default: aws)
+            client.cloud: ${CONFLUENT_CLOUD_CLI_CLOUD_TYPE:aws}
+            # - get from https://confluent.cloud/environments ; this would be your choice during Cloud configuration; (default: us-west-2)
+            client.region: ${CONFLUENT_CLOUD_CLI_CLOUD_REGION:us-west-2}
+            # === Compute Resources ===
+            # - get from https://confluent.cloud/settings/organizations/edit
+            client.organization-id: ${CONFLUENT_CLOUD_CLI_ORGANIZATION_ID:00000000-0000-0000-0000-000000000000}
+            # - get from https://confluent.cloud/environments
+            client.environment-id: ${CONFLUENT_CLOUD_CLI_ENVIRONMENT_ID:env-xxxxx}
+            # - get from https://confluent.cloud/environments
+            client.compute-pool-id: ${CONFLUENT_CLOUD_CLI_COMPUTE_POOL_ID:lfcp-xxxxxxxxxx}
+            # === Security ===
+            # - get from your saved file (Flink -> API Keys)
+            client.flink-api-key: ${CONFLUENT_CLOUD_CLI_FLINK_API_KEY:XXXXXXXXXXXXXXXX}
+            # - get from your saved file (Flink -> API Keys)
+            client.flink-api-secret: ${CONFLUENT_CLOUD_CLI_FLINK_API_SECRET:XxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXxXx}
+            # === Table API ===
+            # - name for this Table API session. Optional but recommended (Maximum length is 255 characters) (it appears Confluent Cloud creates this)
+            # client.context: ${CONFLUENT_TABLE_API_SESSION_NAME:JobDemoJobManagerTableSession}
+            # - local timezone for Table API SQL
+            sql.local-time-zone: ${CONFLUENT_TABLE_API_LOCAL_TIMEZONE:UTC}
+        # === Table API (custom user-defined) ===
+        table-api:
+            properties:
+                # - get from https://confluent.cloud/workspaces/, use catalog ; see `org.apache.flink.table.api.TableEnvironment#useCatalog(java.lang.String)`
+                use.catalog: ${CONFLUENT_TABLE_API_USE_CATALOG:XXXXXXXXXXXXXXXX}
+                # - get from https://confluent.cloud/workspaces/, use catalog ; see `org.apache.flink.table.api.TableEnvironment#useDatabase(java.lang.String)`
+                use.database: ${CONFLUENT_TABLE_API_USE_DATABASE:XXXXXXXXXXXXXXXX}
+            
