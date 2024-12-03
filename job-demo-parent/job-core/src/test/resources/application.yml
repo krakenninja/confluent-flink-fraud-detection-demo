@@ -1,7 +1,7 @@
 # Spring Boot Application YAML (for Job Manager - Consumer)
 spring:
     application:
-        name: Job Manager (DEMO)
+        name: Core (TEST)
     profiles:
         # default active spring profile "confluentcloud-deployment" ; override 
         # by setting switch/parameter '--spring.profiles.active=xxxx' , where 
