@@ -1,0 +1,26 @@
+# Spring Boot Application YAML (for Task Manager - Producer)
+spring:
+    application:
+        name: Task Manager (DEMO)
+    profiles:
+        # default active spring profile "confluentcloud-deployment" ; override 
+        # by setting switch/parameter '--spring.profiles.active=xxxx' , where 
+        # supported 'xxx' are : 
+        # 1.    confluentcloud-deployment
+        active: confluentcloud-deployment
+    # Kafka
+    kafka:
+        bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:pkc-rgm37.us-west-2.aws.confluent.cloud:9092}
+        security:
+            protocol: ${KAFKA_SECURITY_PROTOCOL:SASL_SSL}
+        properties:
+            sasl.mechanism: ${KAFKA_SASL_MECHANISM:PLAIN}
+            sasl.jaas.config: ${KAFKA_SASL_JAAS_CONFIG:org.apache.kafka.common.security.plain.PlainLoginModule required username='{{ CLUSTER_API_KEY }}' password='{{ CLUSTER_API_SECRET }}';}
+        producer:
+            key-serializer: org.apache.kafka.common.serialization.StringSerializer
+            value-serializer: org.apache.kafka.common.serialization.StringSerializer
+
+# Logging
+logging:
+    level:
+        root: INFO

@@ -1,7 +1,11 @@
 package com.github.krakenninja.demo.confluent.service;
 
+import java.util.List;
+import java.util.stream.StreamSupport;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.flink.table.api.Table;
+import org.apache.flink.table.api.TableResult;
+import org.apache.flink.types.Row;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -99,5 +103,40 @@ public class DefaultHelloServiceIntegrationTest
             "Successfully created table 'Hello Table' --- schema details below ..."
         );
         helloTable.printSchema();
+    }
+    
+    /**
+     * Following calls the {@link com.github.krakenninja.demo.confluent.service.HelloService#allHellos()}
+     * @since 1.0.0
+     */
+    @Order(2)
+    @Test
+    public void defaultHelloService_AllHellos_Expect_OK_NoResults()
+    {
+        final TableResult helloTableResult = helloService.allHellos();
+        assertNotNull(
+            helloTableResult
+        );
+        
+        final Iterable<Row> iterable = helloTableResult::collect;
+        assertNotNull(
+            iterable
+        );
+        
+        final List<Row> actual = StreamSupport.stream(
+            iterable.spliterator(), 
+            false
+        ).limit(
+            5
+        ).toList();
+        assertNotNull(
+            actual
+        );
+        assertTrue(
+            actual.isEmpty()
+        );
+        log.info(
+            "Successfully retrieved all table 'Hello Table' records expecting NO RESULT"
+        );
     }
 }

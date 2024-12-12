@@ -22,6 +22,7 @@ import org.apache.flink.table.api.Schema;
 import org.apache.flink.table.api.Table;
 import org.apache.flink.table.api.TableDescriptor;
 import org.apache.flink.table.api.TableEnvironment;
+import org.apache.flink.table.api.TableResult;
 import org.apache.flink.table.api.ValidationException;
 import org.springframework.stereotype.Service;
 
@@ -98,6 +99,22 @@ public class DefaultHelloService
     private final ConfluentCloudConfiguration confluentCloudConfiguration;
     
     /**
+     * Select all "Hello Table" records
+     * @return                                  {@link org.apache.flink.table.api.TableResult} 
+     *                                          of all the "Hello Table" records, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
+    @Nonnull
+    @Override
+    public TableResult allHellos()
+    {
+        return allHellos(
+            getConfluentCloudConfiguration().getTableEnvironment()
+        );
+    }
+    
+    /**
      * Creates the "Hello Table"
      * <p>
      * Currently in Flink's Java API, there is no direct method equivalent to 
@@ -125,6 +142,44 @@ public class DefaultHelloService
     }
     
     /**
+     * Get all hello record(s)
+     * @param tableEnvironment                  Table environment to use to 
+     *                                          get all of the "Hello Table" 
+     *                                          record(s). Must not be 
+     *                                          {@code null}
+     * @return                                  {@link TableResult}, never 
+     *                                          {@code null}
+     * @since 1.0.0
+     * @see <a href="https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises/blob/main/solutions/02-querying-flink-tables/src/main/java/marketplace/CustomerService.java#L20">solutions/02-querying-flink-tables/src/main/java/marketplace/CustomerService.java</a>
+     * @see <a href="https://docs.confluent.io/platform/current/streams/code-examples.html">Kafka Streams Code Examples for Confluent Platform</a>
+     */
+    @Nonnull
+    protected TableResult allHellos(@Nonnull
+                                    final TableEnvironment tableEnvironment)
+    {
+        final TableEnvironment env = getConfiguredTableEnvironment(
+            tableEnvironment
+        );
+        
+        return getTable(
+            env
+        ).select(
+            $(
+                COLUMN_NAME_UUID
+            ),
+            $(
+                COLUMN_NAME_WHO
+            ),
+            $(
+                COLUMN_NAME_MESSAGE
+            ),
+            $(
+                COLUMN_NAME_EVENTTIME
+            )
+        ).execute();
+    }
+    
+    /**
      * Creates the "Hello Table"
      * <p>
      * Currently in Flink's Java API, there is no direct method equivalent to 
@@ -148,8 +203,60 @@ public class DefaultHelloService
      * @since 1.0.0
      * @see <a href="https://github.com/confluentinc/learn-apache-flink-table-api-for-java-exercises/blob/main/solutions/03-building-a-streaming-pipeline/src/main/java/marketplace/OrderService.java#L25C12-L25C23">solutions/03-building-a-streaming-pipeline/src/main/java/marketplace/OrderService.java</a>
      */
-    public Table createHelloTable(@Nonnull
-                                  final TableEnvironment tableEnvironment)
+    protected Table createHelloTable(@Nonnull
+                                     final TableEnvironment tableEnvironment)
+    {
+        final TableEnvironment env = getConfiguredTableEnvironment(
+            tableEnvironment
+        );
+        
+        try
+        {
+            return getTable(
+                env
+            );
+        }
+        catch(NotFoundException nfe)
+        {
+            try
+            {
+                // create the table
+                env.createTable(
+                    TABLE_NAME_HELLOTABLE, 
+                    getTableDescriptor()
+                );
+            }
+            catch(Exception e)
+            {
+                throw new InternalException(
+                    String.format(
+                        "Create table '%s' ENCOUNTERED FAILURE ; %s",
+                        TABLE_NAME_HELLOTABLE,
+                        e.getMessage()
+                    ),
+                    e
+                );
+            }
+            return getTable(
+                env
+            );
+        }
+    }
+    
+    /**
+     * Get configured table environment (defaults to pre-configure it to use 
+     * if available the user defined {@code catalog} and/or {@code database})
+     * @param tableEnvironment                  Table environment to set/define 
+     *                                          use {@code catalog} and/or 
+     *                                          {@code database}. Must 
+     *                                          not be {@code null}
+     * @return                                  Configured table environment, 
+     *                                          never {@code null}
+     * @since 1.0.0
+     */
+    @Nonnull
+    protected TableEnvironment getConfiguredTableEnvironment(@Nonnull
+                                                             final TableEnvironment tableEnvironment)
     {
         // use defined catalog (if available)
         Optional.ofNullable(
@@ -173,37 +280,7 @@ public class DefaultHelloService
             tableEnvironment::useDatabase
         );
         
-        try
-        {
-            return getTable(
-                tableEnvironment
-            );
-        }
-        catch(NotFoundException nfe)
-        {
-            try
-            {
-                // create the table
-                tableEnvironment.createTable(
-                    TABLE_NAME_HELLOTABLE, 
-                    getTableDescriptor()
-                );
-            }
-            catch(Exception e)
-            {
-                throw new InternalException(
-                    String.format(
-                        "Create table '%s' ENCOUNTERED FAILURE ; %s",
-                        TABLE_NAME_HELLOTABLE,
-                        e.getMessage()
-                    ),
-                    e
-                );
-            }
-            return getTable(
-                tableEnvironment
-            );
-        }
+        return tableEnvironment;
     }
     
     /**
@@ -304,9 +381,8 @@ public class DefaultHelloService
         //    value.json-registry.wire-encoding
         return ConfluentTableDescriptor.forManaged().schema(
             getSchema()
-        ).distributedBy(
-            4, 
-            COLUMN_NAME_UUID
+        ).distributedInto(
+            1
         ).option(
             "kafka.retention.time", 
             "1 h"
