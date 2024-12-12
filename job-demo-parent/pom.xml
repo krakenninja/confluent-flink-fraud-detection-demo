@@ -26,8 +26,6 @@
     
     <modules>
         <module>job-core</module>
-        <module>job-producer</module>
-        <module>job-consumer</module>
         <module>gitevent-manager</module>
     </modules>
     
