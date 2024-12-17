@@ -1,12 +1,16 @@
 package com.github.krakenninja.demo.model.transformer.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.github.krakenninja.demo.exceptions.InternalException;
+import com.github.krakenninja.demo.model.transformer.GitHubEventSchema;
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,7 +40,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @Slf4j
 public class DefaultGitHubEventSchemaJUnitTest
 {
-    private DefaultGitHubEventSchema gitHubEventSchemaValidator;
+    private GitHubEventSchema gitHubEventSchema;
     
     private final List<String> gitHubEventJsonSuccessResources = new ArrayList<>();
     
@@ -51,7 +55,7 @@ public class DefaultGitHubEventSchemaJUnitTest
     @BeforeEach
     public void setUp()
     {
-        gitHubEventSchemaValidator = new DefaultGitHubEventSchema();
+        gitHubEventSchema = new DefaultGitHubEventSchema();
         
         int gitHubEventJsonSuccessNumResource = 1;
         while(true)
@@ -135,7 +139,7 @@ public class DefaultGitHubEventSchemaJUnitTest
             indexToProcess -> {
                 try
                 {
-                    final boolean validateResult = gitHubEventSchemaValidator.validate(
+                    final boolean validateResult = gitHubEventSchema.validate(
                         gitHubEventJsonStreams[indexToProcess]
                     );
 
@@ -173,7 +177,7 @@ public class DefaultGitHubEventSchemaJUnitTest
             gitHubEventJsons.length
         ).forEach(
             indexToProcess -> {
-                final boolean validateResult = gitHubEventSchemaValidator.validate(
+                final boolean validateResult = gitHubEventSchema.validate(
                     gitHubEventJsons[indexToProcess]
                 );
                 
@@ -196,7 +200,7 @@ public class DefaultGitHubEventSchemaJUnitTest
             indexToProcess -> {
                 try
                 {
-                    final boolean validateResult = gitHubEventSchemaValidator.validate(
+                    final boolean validateResult = gitHubEventSchema.validate(
                         gitHubEventJsonStreams[indexToProcess]
                     );
 
@@ -234,12 +238,83 @@ public class DefaultGitHubEventSchemaJUnitTest
             gitHubEventJsons.length
         ).forEach(
             indexToProcess -> {
-                final boolean validateResult = gitHubEventSchemaValidator.validate(
+                final boolean validateResult = gitHubEventSchema.validate(
                     gitHubEventJsons[indexToProcess]
                 );
                 
                 assertFalse(
                     validateResult
+                );
+            }
+        );
+    }
+    
+    @Test
+    void transform_UsingStream_ExpectOK()
+    {
+        final InputStream[] gitHubEventJsonStreams = getGitHubEventJsonSuccessStreams();
+        
+        IntStream.range(
+            0, 
+            gitHubEventJsonStreams.length
+        ).forEach(
+            indexToProcess -> {
+                try
+                {
+                    final Map<String, Object> transformResult = gitHubEventSchema.transform(
+                        gitHubEventJsonStreams[indexToProcess],
+                        new TypeReference<LinkedHashMap<String, Object>>() {
+                        }
+                    );
+
+                    assertNotNull(
+                        transformResult
+                    );
+                    assertFalse(
+                        transformResult.isEmpty()
+                    );
+                }
+                finally
+                {
+                    try
+                    {
+                        gitHubEventJsonStreams[indexToProcess].close();
+                    }
+                    catch(Exception e)
+                    {
+                        log.warn(
+                            "Close resource stream at index '{}' ENCOUNTERED FAILURE ; {}",
+                            indexToProcess,
+                            e.getMessage(),
+                            e
+                        );
+                    }
+                }
+            }
+        );
+    }
+    
+    @Test
+    void transform_UsingString_ExpectOK()
+    {
+        final String[] gitHubEventJsons = getGitHubEventSuccessJsons();
+        
+        IntStream.range(
+            0, 
+            gitHubEventJsons.length
+        ).forEach(
+            indexToProcess -> {
+                final Map<String, Object> transformResult = gitHubEventSchema.transform(
+                    gitHubEventJsons[indexToProcess],
+                    new TypeReference<LinkedHashMap<String, Object>>() {
+                    }
+                );
+                
+                assertNotNull(
+                    transformResult
+                );
+                assertFalse(
+                    transformResult.isEmpty()
                 );
             }
         );

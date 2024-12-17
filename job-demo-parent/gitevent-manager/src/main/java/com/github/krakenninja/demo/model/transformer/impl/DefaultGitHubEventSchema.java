@@ -1,5 +1,6 @@
 package com.github.krakenninja.demo.model.transformer.impl;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.krakenninja.demo.constants.AppConstants;
@@ -15,6 +16,8 @@ import com.networknt.schema.SpecVersion;
 import com.networknt.schema.ValidationMessage;
 import jakarta.annotation.Nonnull;
 import jakarta.annotation.Nullable;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.Optional;
@@ -25,6 +28,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.experimental.Accessors;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.input.TeeInputStream;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 
@@ -125,6 +129,170 @@ public class DefaultGitHubEventSchema
     private SchemaLocation schemaLocation = SchemaLocation.of(
         SCHEMA_RESOURCE_LOCATION_JSON
     );
+    
+    /**
+     * Transform the JSON input stream to {@link T} typed
+     * <p>
+     * The following will invoke {@link #validate(java.io.InputStream)} before 
+     * transforming
+     * </p>
+     * @param <T>                               Concrete subclass type to 
+     *                                          transform to
+     * @param jsonStream                        JSON input stream to transform. 
+     *                                          Must not be {@code null}
+     * @param toType                            Transform the {@code jsonStream} 
+     *                                          to typed. Must not be {@code null}
+     * @return                                  {@link T} object ; may be 
+     *                                          {@code null} depending on 
+     *                                          implementation
+     * @throws UnprocessableEntityException     If unable to process the 
+     *                                          {@code jsonStream}
+     * @throws InternalException                If an unknown error occurs
+     * @since 1.0.0
+     * @see #validate(java.io.InputStream) 
+     */
+    @Override
+    public <T extends Object> T transform(@Nonnull
+                                          final InputStream jsonStream,
+                                          @Nonnull
+                                          final TypeReference<T> toType)
+    {
+        try(final ByteArrayOutputStream copyJsonStream = new ByteArrayOutputStream())
+        {
+            try(final TeeInputStream teeInputStream = new TeeInputStream(
+                jsonStream, 
+                copyJsonStream
+            ))
+            {
+                return Optional.of(
+                    validate(
+                        teeInputStream
+                    )
+                ).filter(
+                    isValidateSuccess -> isValidateSuccess
+                ).map(
+                    isValidateSuccess -> {
+                        try(final InputStream jsonRestream = new ByteArrayInputStream(
+                            copyJsonStream.toByteArray()
+                        ))
+                        {
+                            return getMapper().convertValue(
+                                processNode(
+                                    getMapper().readTree(
+                                        jsonRestream
+                                    )
+                                ),
+                                toType
+                            );
+                        }
+                        catch(Exception e)
+                        {
+                            throw new UnprocessableEntityException(
+                                    String.format(
+                                    "Transform JSON stream `%s` type to object `%s` type ENCOUNTERED READ VALUE FAILURE ; %s",
+                                    jsonStream.getClass().getName(),
+                                    toType.getType().getTypeName(),
+                                    e.getMessage()
+                                ),
+                                e
+                            );
+                        }
+                    }
+                ).orElseThrow(
+                    () -> new UnprocessableEntityException(
+                        String.format(
+                            "Transform JSON stream `%s` type to object `%s` type ENCOUNTERED VALIDATION FAILURE ; check logs above for details",
+                            jsonStream.getClass().getName(),
+                            toType.getType().getTypeName()
+                        )
+                    )
+                );
+            }
+        }
+        catch(InternalException e)
+        {
+            throw e;
+        }
+        catch(Exception e)
+        {
+            throw new UnprocessableEntityException(
+                    String.format(
+                    "Transform JSON stream `%s` type to object `%s` type ENCOUNTERED UNEXPECTED FAILURE ; %s",
+                    jsonStream.getClass().getName(),
+                    toType.getType().getTypeName(),
+                    e.getMessage()
+                ),
+                e
+            );
+        }
+    }
+    
+    /**
+     * Transform the JSON string to {@link T} typed
+     * <p>
+     * The following will invoke {@link #validate(java.lang.String)} before 
+     * transforming
+     * </p>
+     * @param <T>                               Concrete subclass type to 
+     *                                          transform to
+     * @param json                              JSON string to validate. Must not 
+     *                                          be {@code null} or blank/empty
+     * @param toType                            Transform the {@code jsonStream} 
+     *                                          to typed. Must not be {@code null}
+     * @return                                  {@link T} object ; may be 
+     *                                          {@code null} depending on 
+     *                                          implementation
+     * @since 1.0.0
+     * @see #validate(java.lang.String) 
+     */
+    @Override
+    public <T extends Object> T transform(@Nonnull
+                                          final String json,
+                                          @Nonnull
+                                          final TypeReference<T> toType)
+    {
+        return Optional.of(
+            validate(
+                json
+            )
+        ).filter(
+            isValidateSuccess -> isValidateSuccess
+        ).map(
+            isValidateSuccess -> {
+                try
+                {
+                    return getMapper().convertValue(
+                        processNode(
+                            getMapper().readTree(
+                                json
+                            )
+                        ),
+                        toType
+                    );
+                }
+                catch(Exception e)
+                {
+                    throw new UnprocessableEntityException(
+                            String.format(
+                            "Transform JSON data to object `%s` type ENCOUNTERED READ VALUE FAILURE ; %s --- JSON data%n\t%s",
+                            toType.getType().getTypeName(),
+                            e.getMessage(),
+                            json
+                        ),
+                        e
+                    );
+                }
+            }
+        ).orElseThrow(
+            () -> new UnprocessableEntityException(
+                String.format(
+                    "Transform JSON data to object `%s` type ENCOUNTERED VALIDATION FAILURE ; check logs above for details --- JSON data%n\t%s",
+                    toType.getType().getTypeName(),
+                    json
+                )
+            )
+        );
+    }
     
     /**
      * Validate the JSON input stream

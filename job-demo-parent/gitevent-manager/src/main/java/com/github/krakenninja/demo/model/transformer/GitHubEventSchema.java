@@ -1,6 +1,8 @@
 package com.github.krakenninja.demo.model.transformer;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import jakarta.annotation.Nonnull;
+import jakarta.annotation.Nullable;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import java.io.InputStream;
@@ -15,6 +17,46 @@ import java.io.InputStream;
  */
 public interface GitHubEventSchema
 {
+    /**
+     * Transform the JSON input stream to {@link T} typed
+     * @param <T>                               Concrete subclass type to 
+     *                                          transform to
+     * @param jsonStream                        JSON input stream to transform. 
+     *                                          Must not be {@code null}
+     * @param toType                            Transform the {@code jsonStream} 
+     *                                          to typed. Must not be {@code null}
+     * @return                                  {@link T} object ; may be 
+     *                                          {@code null} depending on 
+     *                                          implementation
+     * @since 1.0.0
+     */
+    @Nullable
+    <T extends Object> T transform(@Nonnull
+                                   final InputStream jsonStream,
+                                   @Nonnull
+                                   final TypeReference<T> toType);
+    
+    /**
+     * Transform the JSON string to {@link T} typed
+     * @param <T>                               Concrete subclass type to 
+     *                                          transform to
+     * @param json                              JSON string to validate. Must not 
+     *                                          be {@code null} or blank/empty
+     * @param toType                            Transform the {@code jsonStream} 
+     *                                          to typed. Must not be {@code null}
+     * @return                                  {@link T} object ; may be 
+     *                                          {@code null} depending on 
+     *                                          implementation
+     * @since 1.0.0
+     */
+    @Nullable
+    <T extends Object> T transform(@Nonnull
+                                   @NotBlank
+                                   @NotEmpty
+                                   final String json,
+                                   @Nonnull
+                                   final TypeReference<T> toType);
+    
     /**
      * Validate the JSON input stream
      * @param jsonStream                        JSON input stream to validate. 
