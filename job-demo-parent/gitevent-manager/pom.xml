@@ -68,6 +68,11 @@
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
         </dependency>
+        <!-- JSON Dependencies -->
+        <dependency>
+            <groupId>com.networknt</groupId>
+            <artifactId>json-schema-validator</artifactId>
+        </dependency>
         <!-- Test Dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>

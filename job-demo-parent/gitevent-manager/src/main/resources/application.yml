@@ -7,7 +7,8 @@ spring:
         # by setting switch/parameter '--spring.profiles.active=xxxx' , where 
         # supported 'xxx' are : 
         # 1.    confluentcloud-deployment
-        active: confluentcloud-deployment
+        # 2.    githubevent-schema-default
+        active: confluentcloud-deployment,githubevent-schema-default
 
 # Logging
 logging:
